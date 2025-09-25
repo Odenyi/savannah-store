@@ -55,6 +55,7 @@ func (a *App) Initialize() {
 
 	dbO := repository.DbInstance(dbName)
 	a.DB = dbO
+	
 
 	a.setRouters()
 
