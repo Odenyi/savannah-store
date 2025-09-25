@@ -1,0 +1,94 @@
+definitions:
+  models.AuthRequest:
+    properties:
+      phone:
+        example: "0712345678"
+        type: string
+      usertype:
+        example: customer
+        type: string
+    type: object
+  models.UserSignupRequest:
+    properties:
+      email:
+        example: test@example.com
+        type: string
+      password:
+        example: StrongPass123
+        type: string
+      phone:
+        example: "0712345678"
+        type: string
+      role_id:
+        example: 2
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/google/start:
+    post:
+      consumes:
+      - application/json
+      description: Initiates Google OAuth by generating a URL and optional state for
+        signup.
+      parameters:
+      - description: Optional phone and usertype
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/models.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: google_url and state
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: failed to store usertype or phone
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Start Google OAuth flow
+      tags:
+      - Auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user directly without Google OAuth (for alternative
+        signup flows).
+      parameters:
+      - description: User signup payload
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserSignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Manual user signup
+      tags:
+      - Auth
+swagger: "2.0"

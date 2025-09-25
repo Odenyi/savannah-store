@@ -1,0 +1,269 @@
+definitions:
+  models.CategoryRequest:
+    properties:
+      name:
+        type: string
+      parent_id:
+        description: nullable
+        type: integer
+    required:
+    - name
+    type: object
+  models.CategoryResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+    type: object
+  models.CategoryUpdateRequest:
+    properties:
+      name:
+        type: string
+      parent_id:
+        type: integer
+    type: object
+  models.ProductRequest:
+    properties:
+      category_id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    required:
+    - category_id
+    - name
+    - price
+    type: object
+  models.ProductResponse:
+    properties:
+      category_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  models.ProductUpdateRequest:
+    properties:
+      category_id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+info:
+  contact: {}
+  description: This is the API for managing pruducts and orders in Savannah Store.
+  title: Savannah Store API
+  version: "1.0"
+paths:
+  /catalog/categories:
+    get:
+      description: Retrieves all catalog categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.CategoryResponse'
+            type: array
+      summary: List categories
+      tags:
+      - Catalog
+    post:
+      consumes:
+      - application/json
+      description: Creates a new catalog category
+      parameters:
+      - description: Category info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a category
+      tags:
+      - Catalog
+  /catalog/categories/{id}:
+    delete:
+      description: Deletes a catalog category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete category
+      tags:
+      - Catalog
+    put:
+      consumes:
+      - application/json
+      description: Updates a catalog category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated category info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CategoryUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update category
+      tags:
+      - Catalog
+  /catalog/products:
+    get:
+      description: Retrieves all catalog products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ProductResponse'
+            type: array
+      summary: List products
+      tags:
+      - Catalog
+    post:
+      consumes:
+      - application/json
+      description: Creates a new catalog product
+      parameters:
+      - description: Product info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a product
+      tags:
+      - Catalog
+  /catalog/products/{id}:
+    delete:
+      description: Deletes a catalog product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete product
+      tags:
+      - Catalog
+    put:
+      consumes:
+      - application/json
+      description: Updates a catalog product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated product info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProductUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update product
+      tags:
+      - Catalog
+swagger: "2.0"

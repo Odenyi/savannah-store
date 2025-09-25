@@ -1,0 +1,195 @@
+definitions:
+  models.AddToCartRequest:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  models.PlaceOrderRequest:
+    properties:
+      address:
+        type: string
+      payment_method:
+        type: string
+    type: object
+  models.UpdateCartRequest:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: This is the API for managing carts and orders in Savannah Store.
+  title: Savannah Store API
+  version: "1.0"
+paths:
+  /cart:
+    delete:
+      description: Removes a product from the cart
+      parameters:
+      - description: Product ID
+        in: query
+        name: product_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete item from cart
+      tags:
+      - Cart
+    get:
+      description: Retrieves all items from the user cart
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: View cart
+      tags:
+      - Cart
+    post:
+      consumes:
+      - application/json
+      description: Adds a product to the user cart
+      parameters:
+      - description: Cart item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add item to cart
+      tags:
+      - Cart
+    put:
+      consumes:
+      - application/json
+      description: Updates quantity of an item in the cart
+      parameters:
+      - description: Updated cart item
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update cart
+      tags:
+      - Cart
+  /orders:
+    delete:
+      description: Deletes an order by ID
+      parameters:
+      - description: Order ID
+        in: query
+        name: order_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete order
+      tags:
+      - Order
+    get:
+      description: Retrieves all orders for the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      summary: View orders
+      tags:
+      - Order
+    post:
+      consumes:
+      - application/json
+      description: Places a new order for the user
+      parameters:
+      - description: Order details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PlaceOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Place an order
+      tags:
+      - Order
+swagger: "2.0"
