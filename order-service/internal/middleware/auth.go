@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"savannah-store/catalog-service/internal/models"
+	"savannah-store/order-service/internal/models"
 	"strings"
 	"time"
 

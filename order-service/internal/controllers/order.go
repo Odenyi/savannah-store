@@ -19,12 +19,7 @@ import (
 )
 
 // Add item to cart (Redis)
-func AddToCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	req := new(models.CartItem)
-	if err := c.Bind(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-	}
-
+func AddToCart(c echo.Context, db *sql.DB, redisConn *redis.Client, req *models.CartItem) error {
 	// Validate that product exists and fetch current price
 	var exists int
 	var currentPrice float64
@@ -74,16 +69,32 @@ func AddToCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 }
 
 // View Cart
-func ViewCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	userID := c.Param("user_id")
-	key := "cart:" + userID
+func ViewCart(c echo.Context, db *sql.DB, redisConn *redis.Client, userID int64, role string) error {
 
-	_, cartData := library.GetAllKeys(redisConn, key+"*")
+	results := map[string]string{}
+
+	if role == "admin" {
+		// Admin: fetch all carts
+		err, allCarts := library.GetAllKeys(redisConn, "cart:*")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to fetch carts"})
+		}
+		results = allCarts
+	} else {
+		// Normal user: fetch only their cart
+		err, userCart := library.GetAllKeys(redisConn, fmt.Sprintf("cart:%d*", userID))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to fetch cart"})
+		}
+		results = userCart
+	}
 
 	var cart []models.CartItem
-	for _, v := range cartData {
+	for _, v := range results {
 		var item models.CartItem
-		_ = json.Unmarshal([]byte(v), &item)
+		if err := json.Unmarshal([]byte(v), &item); err != nil {
+			continue
+		}
 		cart = append(cart, item)
 	}
 
@@ -92,15 +103,22 @@ func ViewCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 
 // Update cart item
 func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	userID := c.Param("user_id")
-	productID := c.Param("product_id")
+	claims := c.Get("claims").(*models.JwtCustomClaims)
+	role := c.Get("role").(string)
 
-	req := new(models.CartItem)
+	productID := c.Param("id") // assuming /cart/:id
+
+	req := new(models.UpdateCartRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	key := "cart:" + userID + ":" + productID
+	userID := claims.UserID
+	if role == "admin" && req.UserID != 0 {
+		userID = req.UserID
+	}
+
+	key := fmt.Sprintf("cart:%v:%v", userID, productID)
 	val, _ := json.Marshal(req)
 	if err := library.SetRedisKey(redisConn, key, string(val)); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
@@ -111,10 +129,19 @@ func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 
 // Delete cart item
 func DeleteCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	userID := c.Param("user_id")
-	productID := c.Param("product_id")
+	claims := c.Get("claims").(*models.JwtCustomClaims)
+	role := c.Get("role").(string)
 
-	key := "cart:" + userID + ":" + productID
+	productID := c.Param("id") // /cart/:id
+	userID := claims.UserID
+
+	// Admin can delete for another user
+	reqUserID := c.QueryParam("user_id")
+	if role == "admin" && reqUserID != "" {
+		userID = library.ParseUserID(reqUserID)
+	}
+
+	key := fmt.Sprintf("cart:%v:%v", userID, productID)
 	if err := library.DeleteRedisKey(redisConn, key); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
@@ -124,10 +151,20 @@ func DeleteCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 
 // Place Order
 func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Connection) error {
-	userID := c.Param("user_id")
-	cartKeyPattern := fmt.Sprintf("cart:%s:*", userID)
+	claims := c.Get("claims").(*models.JwtCustomClaims)
+	role := c.Get("role").(string)
 
-	// Fetch cart items from Redis
+	userID := claims.UserID
+	if role == "admin" {
+		reqUserID := c.Param("user_id")
+		if reqUserID != "" {
+			userID = library.ParseUserID(reqUserID)
+		}
+	}
+
+	cartKeyPattern := fmt.Sprintf("cart:%v:*", userID)
+
+	// Fetch cart items
 	keys, _ := redisConn.Keys(cartKeyPattern).Result()
 	if len(keys) == 0 {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "cart is empty"})
@@ -135,13 +172,11 @@ func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Co
 
 	var items []models.CartItem
 	var total float64
-
 	for _, key := range keys {
 		data, err := library.GetRedisKey(redisConn, key)
 		if err != nil {
 			continue
 		}
-		// Assuming data is JSON serialized CartItem
 		var item models.CartItem
 		if err := json.Unmarshal([]byte(data), &item); err != nil {
 			continue
@@ -150,8 +185,8 @@ func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Co
 		items = append(items, item)
 	}
 
-	// Insert order into MySQL
-	res, err := db.Exec(`INSERT INTO orders (user_id, total, status, created_at) VALUES (?, ?, ?, ?)`,
+	// Insert order
+	res, err := db.Exec(`INSERT INTO orders (user_id, total_amount, status, created_at) VALUES (?, ?, ?, ?)`,
 		userID, total, "Pending", time.Now())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
@@ -160,21 +195,20 @@ func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Co
 
 	// Insert order items
 	for _, item := range items {
-		_, err = db.Exec(`INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
+		_, err := db.Exec(`INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)`,
 			orderID, item.ProductID, item.Quantity, item.Price)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 		}
 	}
 
-	// Clear cart from Redis
+	// Clear cart
 	for _, key := range keys {
 		_ = library.DeleteRedisKey(redisConn, key)
 	}
 
-	// --- Notifications ---
 	go func() {
-		_ = SendSMS(db, mq, library.ParseUserID(userID), orderID)
+		_ = SendSMS(db, mq, userID, orderID)
 		_ = SendEmailToAdmin(db, mq, orderID, total, items)
 	}()
 
@@ -183,12 +217,18 @@ func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Co
 
 // ViewOrders retrieves all orders for a specific user
 func ViewOrders(c echo.Context, db *sql.DB) error {
-	userID := c.Param("user_id")
+	claims := c.Get("claims").(*models.JwtCustomClaims)
+	role := c.Get("role").(string)
 
-	rows, err := db.Query(`
-		SELECT id, user_id, total_amount, status, created_at 
-		FROM orders 
-		WHERE user_id = ?`, userID)
+	userID := claims.UserID
+	if role == "admin" {
+		reqUserID := c.Param("user_id")
+		if reqUserID != "" {
+			userID = library.ParseUserID(reqUserID)
+		}
+	}
+
+	rows, err := db.Query(`SELECT id, user_id, total_amount, status, created_at FROM orders WHERE user_id = ?`, userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
@@ -196,20 +236,18 @@ func ViewOrders(c echo.Context, db *sql.DB) error {
 
 	var orders []map[string]interface{}
 	for rows.Next() {
-		var id int64
-		var uid int64
-		var totalAmount float64
-		var status string
-		var createdAt string
+		var id, uid int64
+		var total float64
+		var status, createdAt string
 
-		if err := rows.Scan(&id, &uid, &totalAmount, &status, &createdAt); err != nil {
+		if err := rows.Scan(&id, &uid, &total, &status, &createdAt); err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 		}
 
 		orders = append(orders, echo.Map{
 			"id":           id,
 			"user_id":      uid,
-			"total_amount": totalAmount,
+			"total_amount": total,
 			"status":       status,
 			"created_at":   createdAt,
 		})
@@ -220,19 +258,35 @@ func ViewOrders(c echo.Context, db *sql.DB) error {
 
 // DeleteOrder removes an order by ID
 func DeleteOrder(c echo.Context, db *sql.DB) error {
-	id := c.Param("id")
+	claims := c.Get("claims").(*models.JwtCustomClaims)
+	role := c.Get("role").(string)
 
-	_, err := db.Exec(`DELETE FROM orders WHERE id = ?`, id)
+	orderID := c.Param("id")
+
+	// Admin can delete any order, users only their own
+	if role != "admin" {
+		var userID int64
+		err := db.QueryRow(`SELECT user_id FROM orders WHERE id = ?`, orderID).Scan(&userID)
+		if err != nil {
+			return c.JSON(http.StatusNotFound, echo.Map{"error": "order not found"})
+		}
+		if userID != claims.UserID {
+			return c.JSON(http.StatusForbidden, echo.Map{"error": "not authorized"})
+		}
+	}
+
+	_, err := db.Exec(`DELETE FROM orders WHERE id = ?`, orderID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "order deleted"})
 }
+
 func SendSMS(db *sql.DB, rabbitConn *amqp.Connection, userID, orderID int64) error {
 	// Fetch user phone from DB
 	var phone string
-	err := db.QueryRow(`SELECT phone FROM authdb.user WHERE id = ?`, userID).Scan(&phone)
+	err := db.QueryRow(`SELECT phone FROM authdb.users WHERE id = ?`, userID).Scan(&phone)
 	if err != nil {
 		log.Printf("Failed to fetch user phone for userID %d: %v\n", userID, err)
 		return err
@@ -245,7 +299,7 @@ func SendSMS(db *sql.DB, rabbitConn *amqp.Connection, userID, orderID int64) err
 	// Prepare SMS notification
 	message := fmt.Sprintf("Your order #%d has been placed successfully!", orderID)
 	notif := models.Notification{
-		UserID: userID,
+		UserID:  userID,
 		Type:    "sms",
 		To:      phone,
 		Message: message,
@@ -264,7 +318,7 @@ func SendEmailToAdmin(db *sql.DB, rabbitConn *amqp.Connection, orderID int64, to
 	// Fetch admin emails (could be multiple)
 	rows, err := db.Query(`
 		SELECT u.email, 
-		FROM authdb.user u
+		FROM authdb.users u
 		JOIN authdb.roles r ON u.role_id = r.id
 		WHERE r.name = 'admin'
 	`)

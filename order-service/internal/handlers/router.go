@@ -8,6 +8,7 @@ import (
 	_ "savannah-store/order-service/docs"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
+	auth "savannah-store/order-service/internal/middleware"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -78,16 +79,15 @@ func (a *App) setRouters() {
 
 	
 	// Cart routes
-	a.E.POST("/cart", a.AddToCart)                 
-	a.E.GET("/cart/:user_id", a.ViewCart)         
-	a.E.PUT("/cart/:id", a.UpdateCart)             
-	a.E.DELETE("/cart/:id", a.DeleteCart)          
+	a.E.POST("/cart", a.AddToCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.GET("/cart/:user_id", a.ViewCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.PUT("/cart/:id", a.UpdateCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.DELETE("/cart/:id", a.DeleteCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
 
 	// Order routes
-	a.E.POST("/orders/:user_id", a.PlaceOrder)     
-	a.E.GET("/orders/:user_id", a.ViewOrders)      
-	a.E.DELETE("/orders/:id", a.DeleteOrder)       
-
+	a.E.POST("/orders/:user_id", a.PlaceOrder, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.GET("/orders/:user_id", a.ViewOrders, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.DELETE("/orders/:id", a.DeleteOrder, auth.RoleMiddleware(a.DB, "admin"))  
 
 
 	
@@ -113,3 +113,4 @@ func (a *App) Run() {
 	logger.Info("Auth service started %v",server)
 	a.E.Logger.Fatal(a.E.Start(server))
 }
+    

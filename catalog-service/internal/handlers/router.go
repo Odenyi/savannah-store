@@ -80,11 +80,13 @@ func (a *App) setRouters() {
 	a.E.POST("/catalog/categories",a.CreateCategory,auth.RoleMiddleware(a.DB, "admin"))          
 	a.E.GET("/catalog/categories", a.ViewCategories)           
 	a.E.PUT("/catalog/categories/:id", a.UpdateCategory,auth.RoleMiddleware(a.DB, "admin")) 
+	a.E.DELETE("/catalog/categories/:id", a.DeleteCategory,auth.RoleMiddleware(a.DB, "admin"))
 	a.E.GET("/categories/:id/average-price",a.GetAveragePrice,auth.RoleMiddleware(a.DB, "admin"))  
 
 	// Product routes
 	a.E.POST("/catalog/products", a.CreateProduct,auth.RoleMiddleware(a.DB, "admin"))             
-	a.E.GET("/catalog/products", a.ViewProducts)               
+	a.E.GET("/catalog/products", a.ViewProducts)
+	a.E.DELETE("/catalog/products/:id", a.DeleteProduct,auth.RoleMiddleware(a.DB, "admin"))               
 	a.E.PUT("/catalog/products/:id", a.UpdateProduct,auth.RoleMiddleware(a.DB, "admin"))          
 
 

@@ -137,7 +137,8 @@ func (a *App) GoogleCallback(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to check user"})
 		}
 	}
-
+	//querry the correct role id
+	a.DB.QueryRow("SELECT role_id FROM users WHERE id = ?", userID).Scan(&roleID)
 	// Generate JWT
 	claims := &models.JwtCustomClaims{
 		UserID: userID,
