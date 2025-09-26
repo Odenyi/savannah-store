@@ -60,7 +60,8 @@ func GetSMSToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+  
 		return "", fmt.Errorf("failed to get token, status: %s", resp.Status)
 	}
 
