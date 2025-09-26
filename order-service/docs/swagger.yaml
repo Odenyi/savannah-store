@@ -19,6 +19,8 @@ definitions:
         type: integer
       quantity:
         type: integer
+      user_id:
+        type: integer
     type: object
 info:
   contact: {}
@@ -28,13 +30,24 @@ info:
 paths:
   /cart:
     delete:
-      description: Removes a product from the cart
+      description: Removes a product from the cart. Users can delete items from their
+        own cart. Admins can delete items from any user's cart by specifying user_id
+        in query.
       parameters:
       - description: Product ID
         in: query
         name: product_id
         required: true
         type: integer
+      - description: User ID (admin only)
+        in: query
+        name: user_id
+        type: integer
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -53,7 +66,13 @@ paths:
       tags:
       - Cart
     get:
-      description: Retrieves all items from the user cart
+      description: Retrieves all items from the user's cart.
+      parameters:
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -64,6 +83,18 @@ paths:
               additionalProperties: true
               type: object
             type: array
+        "401":
+          description: unauthorized or invalid token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: View cart
       tags:
       - Cart
@@ -72,6 +103,11 @@ paths:
       - application/json
       description: Adds a product to the user cart
       parameters:
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Cart item
         in: body
         name: body
@@ -81,13 +117,19 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             additionalProperties: true
             type: object
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -98,7 +140,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates quantity of an item in the cart
+      description: Updates quantity of an item in the cart. Users can update their
+        own cart. Admins can update any user's cart by specifying user_id in request
+        body.
       parameters:
       - description: Updated cart item
         in: body
@@ -106,6 +150,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.UpdateCartRequest'
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -125,13 +174,23 @@ paths:
       - Cart
   /orders:
     delete:
-      description: Deletes an order by ID
+      description: Deletes an order by ID. Users can delete their own orders. Admins
+        can delete any order.
       parameters:
       - description: Order ID
         in: query
         name: order_id
         required: true
         type: integer
+      - description: User ID (admin only)
+        in: query
+        name: user_id
+        type: integer
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -150,7 +209,18 @@ paths:
       tags:
       - Order
     get:
-      description: Retrieves all orders for the user
+      description: Retrieves all orders for the user. Admins can view all orders or
+        specify a user_id query to view orders of a specific user.
+      parameters:
+      - description: User ID (admin only)
+        in: query
+        name: user_id
+        type: integer
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -167,7 +237,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Places a new order for the user
+      description: Places a new order for the user. Admins can place orders for other
+        users by specifying user_id in request body.
       parameters:
       - description: Order details
         in: body
@@ -175,6 +246,11 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/models.PlaceOrderRequest'
+      - description: API Key
+        in: header
+        name: api-key
+        required: true
+        type: string
       produces:
       - application/json
       responses:

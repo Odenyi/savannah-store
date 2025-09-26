@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/cart": {
             "get": {
-                "description": "Retrieves all items from the user cart",
+                "description": "Retrieves all items from the user's cart.",
                 "produces": [
                     "application/json"
                 ],
@@ -25,6 +25,15 @@ const docTemplate = `{
                     "Cart"
                 ],
                 "summary": "View cart",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -35,11 +44,29 @@ const docTemplate = `{
                                 "additionalProperties": true
                             }
                         }
+                    },
+                    "401": {
+                        "description": "unauthorized or invalid token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
             "put": {
-                "description": "Updates quantity of an item in the cart",
+                "description": "Updates quantity of an item in the cart. Users can update their own cart. Admins can update any user's cart by specifying user_id in request body.",
                 "consumes": [
                     "application/json"
                 ],
@@ -59,6 +86,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.UpdateCartRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -94,6 +128,13 @@ const docTemplate = `{
                 "summary": "Add item to cart",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Cart item",
                         "name": "body",
                         "in": "body",
@@ -104,8 +145,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -119,11 +160,20 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
             "delete": {
-                "description": "Removes a product from the cart",
+                "description": "Removes a product from the cart. Users can delete items from their own cart. Admins can delete items from any user's cart by specifying user_id in query.",
                 "produces": [
                     "application/json"
                 ],
@@ -137,6 +187,19 @@ const docTemplate = `{
                         "description": "Product ID",
                         "name": "product_id",
                         "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID (admin only)",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
                         "required": true
                     }
                 ],
@@ -162,7 +225,7 @@ const docTemplate = `{
         },
         "/orders": {
             "get": {
-                "description": "Retrieves all orders for the user",
+                "description": "Retrieves all orders for the user. Admins can view all orders or specify a user_id query to view orders of a specific user.",
                 "produces": [
                     "application/json"
                 ],
@@ -170,6 +233,21 @@ const docTemplate = `{
                     "Order"
                 ],
                 "summary": "View orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID (admin only)",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -184,7 +262,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Places a new order for the user",
+                "description": "Places a new order for the user. Admins can place orders for other users by specifying user_id in request body.",
                 "consumes": [
                     "application/json"
                 ],
@@ -204,6 +282,13 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.PlaceOrderRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -226,7 +311,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Deletes an order by ID",
+                "description": "Deletes an order by ID. Users can delete their own orders. Admins can delete any order.",
                 "produces": [
                     "application/json"
                 ],
@@ -240,6 +325,19 @@ const docTemplate = `{
                         "description": "Order ID",
                         "name": "order_id",
                         "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "User ID (admin only)",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key",
+                        "name": "api-key",
+                        "in": "header",
                         "required": true
                     }
                 ],
@@ -294,6 +392,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "quantity": {
+                    "type": "integer"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
