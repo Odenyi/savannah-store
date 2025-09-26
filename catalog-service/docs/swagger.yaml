@@ -84,6 +84,11 @@ paths:
       - application/json
       description: Creates a new catalog category
       parameters:
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Category info
         in: body
         name: body
@@ -138,6 +143,11 @@ paths:
       - application/json
       description: Updates a catalog category by ID
       parameters:
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Category ID
         in: path
         name: id
@@ -185,6 +195,11 @@ paths:
       - application/json
       description: Creates a new catalog product
       parameters:
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Product info
         in: body
         name: body
@@ -211,6 +226,11 @@ paths:
     delete:
       description: Deletes a catalog product by ID
       parameters:
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Product ID
         in: path
         name: id
@@ -239,6 +259,11 @@ paths:
       - application/json
       description: Updates a catalog product by ID
       parameters:
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
       - description: Product ID
         in: path
         name: id
@@ -266,4 +291,44 @@ paths:
       summary: Update product
       tags:
       - Catalog
+  /categories/{id}/average-price:
+    get:
+      consumes:
+      - application/json
+      description: Returns the average price of products for a given category, including
+        subcategories
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: API Key for authentication
+        in: header
+        name: api-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: category_id, category_name, average_price
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: error message for invalid input
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: error message for server/database issues
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get average price of products in a category
+      tags:
+      - Categories
 swagger: "2.0"

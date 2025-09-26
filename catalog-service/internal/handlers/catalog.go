@@ -14,6 +14,7 @@ import (
 // @Tags         Catalog
 // @Accept       json
 // @Produce      json
+// @Param        api-key header string true "API Key for authentication"
 // @Param        body  body  models.CategoryRequest  true  "Category info"
 // @Success      201   {object} models.CategoryResponse
 // @Failure      400   {object} map[string]string
@@ -29,6 +30,7 @@ func (a *App) CreateCategory(c echo.Context) error {
 // @Accept json
 // @Produce json
 // @Param id path int true "Category ID"
+// @Param        api-key header string true "API Key for authentication"
 // @Success 200 {object} map[string]interface{} "category_id, category_name, average_price"
 // @Failure 400 {object} map[string]string "error message for invalid input"
 // @Failure 500 {object} map[string]string "error message for server/database issues"
@@ -53,6 +55,7 @@ func (a *App) ViewCategories(c echo.Context) error {
 // @Summary      Update category
 // @Description  Updates a catalog category by ID
 // @Tags         Catalog
+// @Param        api-key header string true "API Key for authentication"
 // @Accept       json
 // @Produce      json
 // @Param        id    path  int                        true  "Category ID"
@@ -84,6 +87,7 @@ func (a *App) DeleteCategory(c echo.Context) error {
 // @Tags         Catalog
 // @Accept       json
 // @Produce      json
+// @Param        api-key header string true "API Key for authentication"
 // @Param        body  body  models.ProductRequest  true  "Product info"
 // @Success      201   {object} models.ProductResponse
 // @Failure      400   {object} map[string]string
@@ -108,6 +112,7 @@ func (a *App) ViewProducts(c echo.Context) error {
 // @Description  Updates a catalog product by ID
 // @Tags         Catalog
 // @Accept       json
+// @Param        api-key header string true "API Key for authentication"
 // @Produce      json
 // @Param        id    path  int                        true  "Product ID"
 // @Param        body  body  models.ProductUpdateRequest true  "Updated product info"
@@ -122,6 +127,7 @@ func (a *App) UpdateProduct(c echo.Context) error {
 // @Summary      Delete product
 // @Description  Deletes a catalog product by ID
 // @Tags         Catalog
+// @Param        api-key header string true "API Key for authentication"
 // @Produce      json
 // @Param        id    path  int  true  "Product ID"
 // @Success      200   {object} map[string]string

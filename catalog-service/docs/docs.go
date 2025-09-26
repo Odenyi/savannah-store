@@ -51,6 +51,13 @@ const docTemplate = `{
                 "summary": "Create a category",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Category info",
                         "name": "body",
                         "in": "body",
@@ -93,6 +100,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update category",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "Category ID",
@@ -204,6 +218,13 @@ const docTemplate = `{
                 "summary": "Create a product",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Product info",
                         "name": "body",
                         "in": "body",
@@ -246,6 +267,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update product",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "Product ID",
@@ -292,6 +320,13 @@ const docTemplate = `{
                 "summary": "Delete product",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "type": "integer",
                         "description": "Product ID",
                         "name": "id",
@@ -311,6 +346,64 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/categories/{id}/average-price": {
+            "get": {
+                "description": "Returns the average price of products for a given category, including subcategories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get average price of products in a category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API Key for authentication",
+                        "name": "api-key",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "category_id, category_name, average_price",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "error message for invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "error message for server/database issues",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -426,8 +519,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "This is the API for managing pruducts and orders in Savannah Store.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	// LeftDelim:        "{{",
-	// RightDelim:       "}}",
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
