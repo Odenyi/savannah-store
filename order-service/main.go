@@ -5,12 +5,11 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 
-	"savannah-store/catalog-service/internal/repository"
+	"savannah-store/order-service/internal/repository"
 
 	"fmt"
-	app "savannah-store/catalog-service/internal/handlers"
+	app "savannah-store/order-service/internal/handlers"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
@@ -18,13 +17,17 @@ import (
 
 	"path/filepath"
 	"runtime"
+
+	"github.com/joho/godotenv"
 )
 
+// Package main Savannah Store API
 //
 // @title           Savannah Store API
 // @version         1.0
-// @description     This is the API for managing pruducts and orders in Savannah Store.
+// @description     This is the API for managing carts and orders in Savannah Store.
 func main() {
+
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -32,24 +35,25 @@ func main() {
 	}
 
 	// setup database
-	dbInstance := repository.DbInstance(os.Getenv("CATALOG_DB_NAME"))
+	dbInstance := repository.DbInstance(os.Getenv("ORDER_DB_NAME"))
 
 	driver, err := mysql.WithInstance(dbInstance, &mysql.Config{})
 	if err != nil {
 
 		panic(err)
 	}
-	migrationPath := fmt.Sprintf("file://%s/../migrations", GetRootPath())
+	migrationPath := fmt.Sprintf("file://%s/migrations", GetRootPath())
+
 	m, err := migrate.NewWithDatabaseInstance(migrationPath, "mysql", driver)
 	if err != nil {
 
-		log.Printf("migration setup error %s ",err.Error())
+		log.Printf("migration setup error %s ", err.Error())
 	}
 
 	err = m.Up() // or m.Step(2) if you want to explicitly set the number of migrations to run
 	if err != nil {
 
-		log.Printf("migration error %s ",err.Error())
+		log.Printf("migration error %s ", err.Error())
 	}
 
 	router := &app.App{}

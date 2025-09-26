@@ -9,10 +9,10 @@ RUN go mod tidy && go mod vendor
 COPY . .
 
 # Build the binary
-RUN go build -mod=vendor -o auth-service
+RUN go build -mod=vendor -o notification-service
 
 # Use a minimal image for runtime
 FROM gcr.io/distroless/base
 WORKDIR /app
-COPY --from=builder /app/auth-service .
-CMD ["./auth-service"]
+COPY --from=builder /app/notification-service .
+CMD ["./notification-service"]

@@ -38,18 +38,18 @@ func main() {
 		panic(err)
 	}
 
-	migrationPath := fmt.Sprintf("file://%s/../migrations", GetRootPath())
+	migrationPath := fmt.Sprintf("file://%s/migrations", GetRootPath())
 
 	m, err := migrate.NewWithDatabaseInstance(migrationPath, "mysql", driver)
 	if err != nil {
 
-		log.Printf("migration setup error %s ",err.Error())
+		log.Printf("migration setup error %s ", err.Error())
 	}
 
 	err = m.Up() // or m.Step(2) if you want to explicitly set the number of migrations to run
 	if err != nil {
 
-		log.Printf("migration error %s ",err.Error())
+		log.Printf("migration error %s ", err.Error())
 	}
 
 	router := &app.App{}

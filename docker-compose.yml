@@ -1,55 +1,17 @@
+version: "3.9"
+
 services:
-  # Database
-  mysql:
-    image: mysql:8.0
-    container_name: savannah_mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: auth_db
-      MYSQL_USER: savannah
-      MYSQL_PASSWORD: savannahpass
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-  # Redis
-  redis:
-    image: redis:7
-    container_name: savannah_redis
-    restart: always
-    ports:
-      - "6379:6379"
-
-  # RabbitMQ
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: savannah_rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
-  # Auth Service
   auth-service:
-    build:
-      context: .
-      dockerfile: ./auth-service/Dockerfile
-    container_name: auth_service
-    restart: always
-    depends_on:
-      - mysql
-      - redis
-      - rabbitmq
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_USER: savannah
-      DB_PASS: savannahpass
-      DB_NAME: auth_db
-      REDIS_HOST: redis:6379
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    build: ./auth-service
+    
 
-volumes:
-  mysql_data:
+  catalog-service:
+    build: ./catalog-service
+    
+  order-service:
+    build: ./order-service
+   
+
+  notification-service:
+    build: ./notification-service
+    
