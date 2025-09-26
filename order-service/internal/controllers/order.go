@@ -103,7 +103,7 @@ func ViewCart(c echo.Context, db *sql.DB, redisConn *redis.Client, userID int64,
 
 // Update cart item
 func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
 	productID := c.Param("id") // assuming /cart/:id
@@ -113,7 +113,7 @@ func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	userID := claims.UserID
+	
 	if role == "admin" && req.UserID != 0 {
 		userID = req.UserID
 	}
@@ -129,11 +129,11 @@ func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 
 // Delete cart item
 func DeleteCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
 	productID := c.Param("id") // /cart/:id
-	userID := claims.UserID
+	
 
 	// Admin can delete for another user
 	reqUserID := c.QueryParam("user_id")
@@ -151,10 +151,10 @@ func DeleteCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
 
 // Place Order
 func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Connection) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
-	userID := claims.UserID
+	
 	if role == "admin" {
 		reqUserID := c.Param("user_id")
 		if reqUserID != "" {
@@ -217,10 +217,10 @@ func PlaceOrder(c echo.Context, db *sql.DB, redisConn *redis.Client, mq *amqp.Co
 
 // ViewOrders retrieves all orders for a specific user
 func ViewOrders(c echo.Context, db *sql.DB) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
-	userID := claims.UserID
+	
 	if role == "admin" {
 		reqUserID := c.Param("user_id")
 		if reqUserID != "" {
@@ -258,19 +258,19 @@ func ViewOrders(c echo.Context, db *sql.DB) error {
 
 // DeleteOrder removes an order by ID
 func DeleteOrder(c echo.Context, db *sql.DB) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
 	orderID := c.Param("id")
 
 	// Admin can delete any order, users only their own
 	if role != "admin" {
-		var userID int64
-		err := db.QueryRow(`SELECT user_id FROM orders WHERE id = ?`, orderID).Scan(&userID)
+		var user int64
+		err := db.QueryRow(`SELECT user_id FROM orders WHERE id = ?`, orderID).Scan(&user)
 		if err != nil {
 			return c.JSON(http.StatusNotFound, echo.Map{"error": "order not found"})
 		}
-		if userID != claims.UserID {
+		if user != userID {
 			return c.JSON(http.StatusForbidden, echo.Map{"error": "not authorized"})
 		}
 	}

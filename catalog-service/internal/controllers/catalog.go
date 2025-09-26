@@ -17,14 +17,41 @@ func CreateCategory(c echo.Context, db *sql.DB) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	query := `INSERT INTO categories (name, parent_id) VALUES (?, ?)`
-	res, err := db.Exec(query, req.Name, req.ParentID)
+	var parentExists bool
+	if *req.ParentID != 0 {
+		// Check if parent category exists
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE id = ?)", req.ParentID).Scan(&parentExists)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		}
+
+		if !parentExists {
+			// Parent does not exist, ignore parent_id
+			*req.ParentID = 0
+		}
+	}
+
+	// Insert category
+	var res sql.Result
+	var err error
+	if *req.ParentID != 0 {
+		// Insert with parent_id
+		res, err = db.Exec("INSERT INTO categories (name, parent_id) VALUES (?, ?)", req.Name, req.ParentID)
+	} else {
+		// Insert without parent_id
+		res, err = db.Exec("INSERT INTO categories (name) VALUES (?)", req.Name)
+	}
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	id, _ := res.LastInsertId()
-	return c.JSON(http.StatusCreated, echo.Map{"id": id, "name": req.Name, "parent_id": req.ParentID})
+	categoryID, _ := res.LastInsertId()
+	return c.JSON(http.StatusCreated, echo.Map{
+		"id":        categoryID,
+		"name":      req.Name,
+		"parent_id": req.ParentID, // 0 if not set
+	})
 }
 
 func GetAveragePrice(c echo.Context, db *sql.DB) error {

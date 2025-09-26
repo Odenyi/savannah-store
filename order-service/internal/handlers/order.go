@@ -21,14 +21,14 @@ import (
 // @Failure      401   {object} map[string]string
 // @Router       /cart [post]
 func (a *App) AddToCart(c echo.Context) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims) // Get user ID from JWT
+	userID := c.Get("user_id").(int64)
 	req := new(models.CartItem)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
 	// Override any UserID sent by client
-	req.UserID = claims.UserID
+	req.UserID = userID
 
 	return controllers.AddToCart(c, a.DB, a.RedisConnection, req)
 }
@@ -46,11 +46,11 @@ func (a *App) AddToCart(c echo.Context) error {
 // @Failure      500  {object} map[string]string "server error"
 // @Router       /cart [get]
 func (a *App) ViewCart(c echo.Context) error {
-	claims := c.Get("claims").(*models.JwtCustomClaims)
+	userID := c.Get("user_id").(int64)
 	role := c.Get("role").(string)
 
 	// Pass claims.UserID and role to controller
-	return controllers.ViewCart(c, a.DB, a.RedisConnection, claims.UserID, role)
+	return controllers.ViewCart(c, a.DB, a.RedisConnection, userID, role)
 }
 
 // UpdateCart godoc
