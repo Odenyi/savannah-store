@@ -343,7 +343,7 @@ func SendSMS(db *sql.DB, rabbitConn *amqp.Connection, userID, orderID int64) err
 func SendEmailToAdmin(db *sql.DB, rabbitConn *amqp.Connection, orderID int64, total float64, items []models.CartItem) error {
 	// Fetch admin emails (could be multiple)
 	rows, err := db.Query(`
-		SELECT u.email, 
+		SELECT u.email
 		FROM authdb.users u
 		JOIN authdb.roles r ON u.role_id = r.id
 		WHERE r.name = 'admin'

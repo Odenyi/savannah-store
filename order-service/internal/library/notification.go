@@ -18,7 +18,7 @@ func Notification(rabbitConn *amqp.Connection, notify models.Notification) error
 		return fmt.Errorf("missing mandatory fields in notification")
 	}
 	log.Printf("Preparing to send notification: %+v", notify)
-	err :=pushToQueue(rabbitConn, "notification", notify)
+	err :=pushToQueue(rabbitConn, "notification_queue", notify)
 	if err != nil {
 		log.Printf("Error pushing notification to queue: %v", err)
 		return fmt.Errorf("error pushing notification to queue: %v", err)
