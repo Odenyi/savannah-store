@@ -68,6 +68,7 @@ func SendSMS(notif models.Notification) error {
 	}
 
 	if notif.To == "" || notif.Message == "" {
+		log.Printf("phone number or message is empty")
 		return fmt.Errorf("phone number or message is empty")
 	}
 
@@ -82,6 +83,7 @@ func SendSMS(notif models.Notification) error {
 
 	req, err := http.NewRequest("POST", smsendpoint, bytes.NewBuffer(data))
 	if err != nil {
+		log.Printf("failed to create SMS request: %v", err)
 		return err
 	}
 
@@ -96,6 +98,7 @@ func SendSMS(notif models.Notification) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		log.Printf("failed to send SMS, status: %s", resp.Status)
 		return fmt.Errorf("failed to send SMS, status: %s", resp.Status)
 	}
 
