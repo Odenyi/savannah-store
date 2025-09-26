@@ -104,29 +104,58 @@ func ViewCart(c echo.Context, db *sql.DB, redisConn *redis.Client, userID int64,
 
 // Update cart item
 func UpdateCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
-	userID := c.Get("user_id").(int64)
-	role := c.Get("role").(string)
+    userID := c.Get("user_id").(int64)
+    role := c.Get("role").(string)
+    productID := c.Param("id") // /cart/:id
 
-	productID := c.Param("id") // assuming /cart/:id
+    req := new(models.UpdateCartRequest)
+    if err := c.Bind(req); err != nil {
+        return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+    }
 
-	req := new(models.UpdateCartRequest)
-	if err := c.Bind(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-	}
+    // Admin can update for other users
+    if role == "admin" && req.UserID != 0 {
+        userID = req.UserID
+    }
 
-	
-	if role == "admin" && req.UserID != 0 {
-		userID = req.UserID
-	}
+    key := fmt.Sprintf("cart:%v:%v", userID, productID)
 
-	key := fmt.Sprintf("cart:%v:%v", userID, productID)
-	val, _ := json.Marshal(req)
-	if err := library.SetRedisKey(redisConn, key, string(val)); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
-	}
+    // Fetch existing cart item
+    existingData, err := library.GetRedisKey(redisConn, key)
+    var cartItem models.CartItem
+    if err == nil {
+        _ = json.Unmarshal([]byte(existingData), &cartItem)
+    } else {
+        // If not exists, start new
+        cartItem = models.CartItem{
+            UserID:    userID,
+            ProductID: int64(req.ProductID),
+        }
+    }
 
-	return c.JSON(http.StatusOK, echo.Map{"message": "cart updated"})
+    // Update quantity
+    cartItem.Quantity = req.Quantity
+
+    // Always fetch correct price from DB
+    var currentPrice float64
+    err = db.QueryRow(`SELECT price FROM catalogdb.products WHERE id = ?`, req.ProductID).Scan(&currentPrice)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return c.JSON(http.StatusBadRequest, echo.Map{"error": "product does not exist"})
+        }
+        return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+    }
+    cartItem.Price = currentPrice
+
+    // Save back to Redis
+    val, _ := json.Marshal(cartItem)
+    if err := library.SetRedisKey(redisConn, key, string(val)); err != nil {
+        return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+    }
+
+    return c.JSON(http.StatusOK, echo.Map{"message": "cart updated"})
 }
+
 
 // Delete cart item
 func DeleteCart(c echo.Context, db *sql.DB, redisConn *redis.Client) error {
