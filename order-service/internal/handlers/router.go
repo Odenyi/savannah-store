@@ -3,12 +3,13 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"savannah-store/order-service/internal/repository"
-	"savannah-store/order-service/internal/logger"
 	_ "savannah-store/order-service/docs"
+	"savannah-store/order-service/internal/logger"
+	auth "savannah-store/order-service/internal/middleware"
+	"savannah-store/order-service/internal/repository"
+
 	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
-	auth "savannah-store/order-service/internal/middleware"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -20,7 +21,6 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	
 )
 
 // router and DB instance
@@ -42,8 +42,6 @@ func (a *App) Initialize() {
 
 	dbO := repository.DbInstance(dbName)
 	a.DB = dbO
-	
-
 
 	a.setRouters()
 
@@ -77,20 +75,16 @@ func (a *App) setRouters() {
 
 	a.E.Use(middleware.CORSWithConfig(corsConfig))
 
-	
 	// Cart routes
 	a.E.POST("/cart", a.AddToCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
-	a.E.GET("/cart/:user_id", a.ViewCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
-	a.E.PUT("/cart/:id", a.UpdateCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
-	a.E.DELETE("/cart/:id", a.DeleteCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.GET("/cart", a.ViewCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.PUT("/cart", a.UpdateCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.DELETE("/cart", a.DeleteCart, auth.RoleMiddleware(a.DB, "customer", "admin"))
 
 	// Order routes
-	a.E.POST("/orders/:user_id", a.PlaceOrder, auth.RoleMiddleware(a.DB, "customer", "admin"))
-	a.E.GET("/orders/:user_id", a.ViewOrders, auth.RoleMiddleware(a.DB, "customer", "admin"))
-	a.E.DELETE("/orders/:id", a.DeleteOrder, auth.RoleMiddleware(a.DB, "admin"))  
-
-
-	
+	a.E.POST("/orders", a.PlaceOrder, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.GET("/orders", a.ViewOrders, auth.RoleMiddleware(a.DB, "customer", "admin"))
+	a.E.DELETE("/orders", a.DeleteOrder, auth.RoleMiddleware(a.DB, "admin"))
 
 	//status
 	a.E.POST("/", a.GetStatus)
@@ -110,7 +104,6 @@ func (a *App) Run() {
 	host := os.Getenv("SYSTEM_HOST")
 	port := os.Getenv("ORDER_SYSTEM_PORT")
 	server := fmt.Sprintf("%s:%s", host, port)
-	logger.Info("Auth service started %v",server)
+	logger.Info("Auth service started %v", server)
 	a.E.Logger.Fatal(a.E.Start(server))
 }
-    
