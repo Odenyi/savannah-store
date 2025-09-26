@@ -138,7 +138,7 @@ func (a *App) GoogleCallback(c echo.Context) error {
 		}
 	}
 	//querry the correct role id
-	a.DB.QueryRow("SELECT role_id FROM users WHERE id = ?", userID).Scan(&roleID)
+	a.DB.QueryRow("SELECT role_id,name FROM users WHERE id = ?", userID).Scan(&roleID, &usertype)
 	// Generate JWT
 	claims := &models.JwtCustomClaims{
 		UserID: userID,
@@ -172,7 +172,6 @@ func (a *App) GoogleCallback(c echo.Context) error {
 		},
 	})
 }
-
 
 func (a *App) UserSignup(c echo.Context) error {
 	user, err := controllers.UserCreate(c, a.DB)
