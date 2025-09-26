@@ -21,13 +21,14 @@ import (
 // Add item to cart (Redis)
 func AddToCart(c echo.Context, db *sql.DB, redisConn *redis.Client, req *models.CartItem) error {
 	// Validate that product exists and fetch current price
-	var exists int
 	var currentPrice float64
-	err := db.QueryRow(`SELECT COUNT(*), price FROM catalogdb.products WHERE id = ?`, req.ProductID).Scan(&exists, &currentPrice)
-	if err != nil || exists == 0 {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "product does not exist"})
-	}
-
+	err := db.QueryRow(`SELECT price FROM catalogdb.products WHERE id = ?`, req.ProductID).Scan(&currentPrice)
+	if err != nil {
+    if err == sql.ErrNoRows {
+        return c.JSON(http.StatusBadRequest, echo.Map{"error": "product does not exist"})
+    }
+    return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+}
 	// Force the correct price from catalog
 	req.Price = currentPrice
 
