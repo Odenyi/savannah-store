@@ -254,7 +254,7 @@ func ViewOrders(c echo.Context, db *sql.DB) error {
 		}
 	}
 
-	rows, err := db.Query(`SELECT id, user_id, total_amount, status, created_at FROM orders WHERE user_id = ?`, userID)
+	rows, err := db.Query(`SELECT id, user_id, total_amount, status, created FROM orders WHERE user_id = ?`, userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
