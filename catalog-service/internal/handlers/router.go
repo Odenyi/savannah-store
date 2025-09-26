@@ -107,7 +107,7 @@ func (a *App) GetStatus(c echo.Context) error {
 func (a *App) Run() {
 
 	host := os.Getenv("SYSTEM_HOST")
-	port := os.Getenv("IDENTITY_SYSTEM_PORT")
+	port := os.Getenv("CATALOG_SYSTEM_PORT")
 	server := fmt.Sprintf("%s:%s", host, port)
 	logger.Info("Auth service started %v",server)
 	a.E.Logger.Fatal(a.E.Start(server))
