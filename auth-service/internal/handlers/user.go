@@ -110,16 +110,24 @@ func (a *App) GoogleCallback(c echo.Context) error {
 		usertype = "customer"
 	}
 
+	// Map usertype → role_id
+	var roleID int
+	err = a.DB.QueryRow("SELECT id FROM roles WHERE name = ?", usertype).Scan(&roleID)
+	if err != nil {
+		// fallback: assign customer role
+		_ = a.DB.QueryRow("SELECT id FROM roles WHERE name = 'customer'").Scan(&roleID)
+	}
+
 	// Check if user exists
 	var userID int64
-	err = a.DB.QueryRow("SELECT id FROM user WHERE email = ?", userInfo.Email).Scan(&userID)
+	err = a.DB.QueryRow("SELECT id FROM users WHERE email = ?", userInfo.Email).Scan(&userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// User does not exist → create new one
 			res, insertErr := a.DB.Exec(`
-				INSERT INTO user (email, email_verified, full_name, phone, usertype)
+				INSERT INTO users (email, email_verified, full_name, phone, role_id)
 				VALUES (?, 1, ?, ?, ?)`,
-				userInfo.Email, userInfo.Name, phone, usertype,
+				userInfo.Email, userInfo.Name, phone, roleID,
 			)
 			if insertErr != nil {
 				return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to create user"})
@@ -158,10 +166,12 @@ func (a *App) GoogleCallback(c echo.Context) error {
 			"email":    userInfo.Email,
 			"name":     userInfo.Name,
 			"phone":    phone,
+			"role_id":  roleID,
 			"usertype": usertype,
 		},
 	})
 }
+
 
 func (a *App) UserSignup(c echo.Context) error {
 	user, err := controllers.UserCreate(c, a.DB)
